@@ -20,7 +20,7 @@ import {
 
 const navItems = [
   { name: "Accueil", href: "/" },
-  { name: "Boutique", href: "/shop" },
+  { name: "Boutique", href: "/products" },
   { name: "À propos", href: "/about" },
   { name: "Contact", href: "/contact" },
 ]

@@ -12,6 +12,7 @@ import { SlidersHorizontal, X } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import ProductCard from "@/components/ProductCard"
+import PriceFilter from "@/components/PriceFilter"
 import { getProducts, getCategories } from "@/lib/shopify"
 
 import type { ShopifyCollection } from "@/lib/shopify/types"
@@ -174,52 +175,11 @@ function FiltersSidebar({
         {/* Price Range Filter */}
         <div>
           <h3 className="text-sm font-semibold mb-3">Prix</h3>
-          <div className="space-y-2">
-            <div>
-              <label htmlFor="min-price" className="text-xs text-muted-foreground">
-                Prix min
-              </label>
-              <input
-                id="min-price"
-                type="number"
-                min="0"
-                step="0.01"
-                defaultValue={minPrice ?? ""}
-                placeholder="0 €"
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                onChange={(e) => {
-                  const val = e.target.value
-                  const params = new URLSearchParams()
-                  if (activeCollection) params.set("collection", activeCollection)
-                  if (val) params.set("minPrice", val)
-                  if (maxPrice) params.set("maxPrice", maxPrice)
-                  window.location.href = `/products?${params.toString()}`
-                }}
-              />
-            </div>
-            <div>
-              <label htmlFor="max-price" className="text-xs text-muted-foreground">
-                Prix max
-              </label>
-              <input
-                id="max-price"
-                type="number"
-                min="0"
-                step="0.01"
-                defaultValue={maxPrice ?? ""}
-                placeholder="Max"
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                onChange={(e) => {
-                  const val = e.target.value
-                  const params = new URLSearchParams()
-                  if (activeCollection) params.set("collection", activeCollection)
-                  if (minPrice) params.set("minPrice", minPrice)
-                  if (val) params.set("maxPrice", val)
-                  window.location.href = `/products?${params.toString()}`
-                }}
-              />
-            </div>
-          </div>
+          <PriceFilter
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            activeCollection={activeCollection}
+          />
         </div>
       </div>
     </aside>
