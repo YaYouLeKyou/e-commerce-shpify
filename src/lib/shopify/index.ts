@@ -10,6 +10,11 @@ import {
   GET_COLLECTIONS_QUERY,
   GET_PRODUCTS_BY_COLLECTION_QUERY,
   SEARCH_PRODUCTS_QUERY,
+  CART_CREATE_MUTATION,
+  CART_LINES_ADD_MUTATION,
+  CART_LINES_REMOVE_MUTATION,
+  CART_LINES_UPDATE_MUTATION,
+  GET_CART_QUERY,
 } from "./queries"
 
 import type {
@@ -20,6 +25,14 @@ import type {
   ShopifyCollectionsResponse,
   ShopifyProduct,
   ShopifyCollection,
+  ShopifyCart,
+  ShopifyCartCreateResponse,
+  ShopifyCartLinesAddResponse,
+  ShopifyCartLinesRemoveResponse,
+  ShopifyCartLinesUpdateResponse,
+  ShopifyCartResponse,
+  ShopifyCartLineInput,
+  ShopifyCartLineUpdateInput,
 } from "./types"
 
 // --- Cache tags constants for revalidation ---
@@ -29,6 +42,9 @@ export const SHOPIFY_CACHE_TAGS = {
   collections: "shopify-collections",
   collection: (handle: string) => `shopify-collection-${handle}`,
 } as const
+
+// --- Cookie name for storing the Shopify cart ID ---
+export const CART_COOKIE_NAME = "shopify_cart_id"
 
 // --- Default revalidation time (in seconds) ---
 const DEFAULT_REVALIDATE = 60 * 5 // 5 minutes
@@ -60,6 +76,46 @@ export async function shopifyFetch<T>({
       revalidate: revalidate ?? DEFAULT_REVALIDATE,
       tags: tags ?? [],
     },
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      `Shopify API error: ${response.status} ${response.statusText}`
+    )
+  }
+
+  const result: ShopifyFetchResponse<T> = await response.json()
+
+  if (result.errors) {
+    throw new Error(
+      `Shopify GraphQL error: ${result.errors
+        .map((e) => e.message)
+        .join(", ")}`
+    )
+  }
+
+  return result
+}
+
+/**
+ * Fetch function for cart mutations — always bypasses the cache.
+ * Used by client-side cart operations (add, remove, update, create).
+ */
+async function shopifyCartFetch<T>(
+  query: string,
+  variables?: Record<string, unknown>
+): Promise<ShopifyFetchResponse<T>> {
+  const endpoint = `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2024-10/graphql.json`
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Storefront-Access-Token":
+        process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? "",
+    },
+    body: JSON.stringify({ query, variables }),
+    cache: "no-store",
   })
 
   if (!response.ok) {
@@ -249,4 +305,100 @@ export async function searchProducts({
     products: data.products.edges.map((edge) => edge.node),
     pageInfo: data.products.pageInfo,
   }
+}
+
+// ============================================================
+// Cart API Functions
+// ============================================================
+
+/**
+ * Create a new empty cart in Shopify.
+ * Returns the cart with its ID and checkout URL.
+ */
+export async function createCart(): Promise<ShopifyCart> {
+  const { data } = await shopifyCartFetch<ShopifyCartCreateResponse>(
+    CART_CREATE_MUTATION
+  )
+
+  if (!data.cartCreate.cart) {
+    throw new Error("Failed to create cart: no cart returned")
+  }
+
+  return data.cartCreate.cart
+}
+
+/**
+ * Fetch an existing cart by its Shopify cart ID.
+ * @param cartId - The Shopify cart ID
+ */
+export async function getCart(cartId: string): Promise<ShopifyCart | null> {
+  const { data } = await shopifyCartFetch<ShopifyCartResponse>(
+    GET_CART_QUERY,
+    { cartId }
+  )
+
+  return data.cart
+}
+
+/**
+ * Add line items to a cart.
+ * @param cartId - The Shopify cart ID
+ * @param lines - Array of { quantity, merchandiseId }
+ */
+export async function addCartLines(
+  cartId: string,
+  lines: ShopifyCartLineInput[]
+): Promise<ShopifyCart> {
+  const { data } = await shopifyCartFetch<ShopifyCartLinesAddResponse>(
+    CART_LINES_ADD_MUTATION,
+    { cartId, lines }
+  )
+
+  if (!data.cartLinesAdd.cart) {
+    throw new Error("Failed to add lines to cart")
+  }
+
+  return data.cartLinesAdd.cart
+}
+
+/**
+ * Remove line items from a cart.
+ * @param cartId - The Shopify cart ID
+ * @param lineIds - Array of cart line item IDs to remove
+ */
+export async function removeCartLines(
+  cartId: string,
+  lineIds: string[]
+): Promise<ShopifyCart> {
+  const { data } = await shopifyCartFetch<ShopifyCartLinesRemoveResponse>(
+    CART_LINES_REMOVE_MUTATION,
+    { cartId, lineIds }
+  )
+
+  if (!data.cartLinesRemove.cart) {
+    throw new Error("Failed to remove lines from cart")
+  }
+
+  return data.cartLinesRemove.cart
+}
+
+/**
+ * Update line items in a cart (e.g. change quantity).
+ * @param cartId - The Shopify cart ID
+ * @param lines - Array of { id, quantity }
+ */
+export async function updateCartLines(
+  cartId: string,
+  lines: ShopifyCartLineUpdateInput[]
+): Promise<ShopifyCart> {
+  const { data } = await shopifyCartFetch<ShopifyCartLinesUpdateResponse>(
+    CART_LINES_UPDATE_MUTATION,
+    { cartId, lines }
+  )
+
+  if (!data.cartLinesUpdate.cart) {
+    throw new Error("Failed to update lines in cart")
+  }
+
+  return data.cartLinesUpdate.cart
 }

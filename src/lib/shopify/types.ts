@@ -122,3 +122,87 @@ export interface ShopifyFetchResponse<T> {
   data: T
   errors?: { message: string; locations?: { line: number; column: number }[] }[]
 }
+
+// ============================================================
+// Cart Types
+// ============================================================
+
+// --- Cart Line Item ---
+export interface ShopifyCartLine {
+  id: string
+  quantity: number
+  cost: {
+    totalAmount: ShopifyPrice
+  }
+  merchandise: {
+    id: string
+    title: string
+    sku: string
+    availableForSale: boolean
+    image: ShopifyImage | null
+    product: {
+      id: string
+      title: string
+      handle: string
+    }
+    price: ShopifyPrice
+    compareAtPrice: ShopifyPrice | null
+  }
+}
+
+// --- Cart ---
+export interface ShopifyCart {
+  id: string
+  checkoutUrl: string
+  totalQuantity: number
+  lines: ShopifyCartLine[]
+  cost: {
+    totalAmount: ShopifyPrice
+    subtotalAmount: ShopifyPrice
+    totalTaxAmount: ShopifyPrice | null
+  }
+}
+
+// --- Cart Mutation Responses ---
+export interface ShopifyCartCreateResponse {
+  cartCreate: {
+    cart: ShopifyCart | null
+    userErrors: { field: string[] | null; message: string }[]
+  }
+}
+
+export interface ShopifyCartLinesAddResponse {
+  cartLinesAdd: {
+    cart: ShopifyCart | null
+    userErrors: { field: string[] | null; message: string }[]
+  }
+}
+
+export interface ShopifyCartLinesRemoveResponse {
+  cartLinesRemove: {
+    cart: ShopifyCart | null
+    userErrors: { field: string[] | null; message: string }[]
+  }
+}
+
+export interface ShopifyCartLinesUpdateResponse {
+  cartLinesUpdate: {
+    cart: ShopifyCart | null
+    userErrors: { field: string[] | null; message: string }[]
+  }
+}
+
+export interface ShopifyCartResponse {
+  cart: ShopifyCart | null
+}
+
+// --- Cart Line Input ---
+export interface ShopifyCartLineInput {
+  quantity: number
+  merchandiseId: string
+}
+
+export interface ShopifyCartLineUpdateInput {
+  id: string
+  quantity: number
+}

@@ -240,3 +240,146 @@ export const SEARCH_PRODUCTS_QUERY = `
     }
   }
 `
+
+// ============================================================
+// Cart Mutations & Queries
+// ============================================================
+
+export const CART_LINE_FRAGMENT = `
+  fragment CartLine on CartLine {
+    id
+    quantity
+    cost {
+      totalAmount {
+        amount
+        currencyCode
+      }
+    }
+    merchandise {
+      ... on ProductVariant {
+        id
+        title
+        sku
+        availableForSale
+        image {
+          url
+          altText
+          width
+          height
+        }
+        product {
+          id
+          title
+          handle
+        }
+        price {
+          amount
+          currencyCode
+        }
+        compareAtPrice {
+          amount
+          currencyCode
+        }
+      }
+    }
+  }
+`
+
+export const CART_FRAGMENT = `
+  ${CART_LINE_FRAGMENT}
+  fragment Cart on Cart {
+    id
+    checkoutUrl
+    totalQuantity
+    lines(first: 100) {
+      edges {
+        node {
+          ...CartLine
+        }
+      }
+    }
+    cost {
+      totalAmount {
+        amount
+        currencyCode
+      }
+      subtotalAmount {
+        amount
+        currencyCode
+      }
+      totalTaxAmount {
+        amount
+        currencyCode
+      }
+    }
+  }
+`
+
+export const GET_CART_QUERY = `
+  ${CART_FRAGMENT}
+  query GetCart($cartId: ID!) {
+    cart(id: $cartId) {
+      ...Cart
+    }
+  }
+`
+
+export const CART_CREATE_MUTATION = `
+  ${CART_FRAGMENT}
+  mutation CartCreate {
+    cartCreate {
+      cart {
+        ...Cart
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`
+
+export const CART_LINES_ADD_MUTATION = `
+  ${CART_FRAGMENT}
+  mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+    cartLinesAdd(cartId: $cartId, lines: $lines) {
+      cart {
+        ...Cart
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`
+
+export const CART_LINES_REMOVE_MUTATION = `
+  ${CART_FRAGMENT}
+  mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+    cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
+      cart {
+        ...Cart
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`
+
+export const CART_LINES_UPDATE_MUTATION = `
+  ${CART_FRAGMENT}
+  mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+    cartLinesUpdate(cartId: $cartId, lines: $lines) {
+      cart {
+        ...Cart
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`
